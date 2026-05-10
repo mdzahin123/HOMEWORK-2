@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast</title>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+      }
+      #weather-container {
+          margin-top: 20px;
+          overflow-x: auto;
+          white-space: nowrap;
+      }
+      .forecast-item {
+          border: 1px solid #ccc;
+          padding: 10px;
+          margin-bottom: 10px;
+          border-radius: 5px;
+          display: inline-block;
+          width: 200px;
+          margin-right: 10px;
+          white-space: normal;
+          vertical-align: top;
+      }
+  </style>
+</head>
+<body>
+<h1>Weather Forecast</h1>
+<label for="zipcode">Enter Zip Code:</label>
+<input type="text" id="zipcode" placeholder="e.g., 16802">
+<button onclick="getWeather()">Get Weather</button>
+
+<div id="weather-container">
+
+</div>
+
+
+<script src="index.js"></script>
+</body>
+</html>
