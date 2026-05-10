@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imgur Client</title>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #e0e0e0;
+      }
+      #header {
+          background-color: #007bff;
+          color: #fff; /* Header text color */
+          padding: 15px;
+          text-align: center;
+          font-size: 24px;
+          font-weight: bold;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+      #gallery {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          padding: 20px;
+      }
+      .image-container {
+          background-color: #fff;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          padding: 10px;
+          width: 200px;
+          text-align: center;
+      }
+      .image-container img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 5px;
+      }
+      .stats {
+          margin-top: 10px;
+          font-size: 14px;
+          color: #555;
+      }
+      #detail-page {
+          display: none;
+          padding: 20px;
+      }
+      #detail-image {
+          max-width: 100%;
+          height: auto;
+          border-radius: 5px;
+      }
+      #comments {
+          margin-top: 20px;
+      }
+      .comment {
+          background-color: #fff;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          padding: 10px;
+          margin-bottom: 10px;
+      }
+      .comment-author {
+          font-weight: bold;
+          margin-bottom: 5px;
+      }
+      .comment-text {
+          font-size: 14px;
+          color: #333;
+      }
+      .back-button {
+          margin-top: 20px;
+          padding: 10px 20px;
+          background-color: #007bff;
+          color: #fff;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+      .back-button:hover {
+          background-color: #0056b3;
+      }
+  </style>
+</head>
+<body>
+<div id="header">Imgur Gallery</div> <!-- Header for the title -->
+<div id="gallery"></div>
+<div id="detail-page">
+  <img id="detail-image" src="" alt="Detail Image">
+  <div id="comments"></div>
+  <button class="back-button" onclick="goBack()">Back to Gallery</button>
+</div>
+
+<script>
+  // ===========================================================================
+  // Imgur Client-ID required.
+  //
+  // Get a free Client-ID at:
+  //   https://api.imgur.com/oauth2/addclient
+  //
+  // 1. Sign in (or create a free Imgur account)
+  // 2. Application name: anything (e.g., "Homework2")
+  // 3. Authorization type: choose "Anonymous usage without user authorization"
+  // 4. Email: your email; callback URL can be left blank
+  // 5. Submit and copy the Client-ID shown on the next page
+  // 6. Paste it below, replacing YOUR_IMGUR_CLIENT_ID_HERE
+  // ===========================================================================
+  const clientId = "YOUR_IMGUR_CLIENT_ID_HERE";
+
+
+  function fetchRandomGallery() {
+    const url = "https://api.imgur.com/3/gallery/random/random/";
+    fetch(url, {
+      headers: {
+        Authorization: `Client-ID ${clientId}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("API Response:", data);
+        const images = data.data;
+        const gallery = document.getElementById("gallery");
+
+        if (!images || images.length === 0) {
+          gallery.innerHTML = "<p>No images found.</p>";
+          return;
+        }
+
+
+        const header = document.getElementById("header");
+        if (images[0].title) {
+          header.innerText = images[0].title;
+        }
+
+        images.forEach(image => {
+          console.log("Image Object:", image);
+
+
+          if (!image.link || !image.type || !image.type.startsWith("image/")) {
+            console.log("Skipping non-image item:", image);
+            return;
+          }
+
+          const imageContainer = document.createElement("div");
+          imageContainer.className = "image-container";
+
+          const imgElement = document.createElement("img");
+          imgElement.src = image.link;
+          imgElement.alt = image.title || "Imgur Image";
+
+          const stats = document.createElement("div");
+          stats.className = "stats";
+          stats.innerText = `Likes: ${image.ups || 0} | Comments: ${image.comment_count || 0}`;
+
+
+          imgElement.addEventListener("click", () => {
+            showDetailPage(image);
+          });
+
+          imageContainer.appendChild(imgElement);
+          imageContainer.appendChild(stats);
+          gallery.appendChild(imageContainer);
+        });
+      })
+      .catch(error => {
+        console.error("Error fetching Imgur gallery:", error);
+        const gallery = document.getElementById("gallery");
+        gallery.innerHTML = `<p>Error loading gallery: ${error.message}</p>`;
+      });
+  }
+
+
+  function showDetailPage(image) {
+    const detailPage = document.getElementById("detail-page");
+    const detailImage = document.getElementById("detail-image");
+    const commentsContainer = document.getElementById("comments");
+
+
+    document.getElementById("gallery").style.display = "none";
+    detailPage.style.display = "block";
+
+
+    detailImage.src = image.link;
+    detailImage.alt = image.title || "Imgur Image";
+
+
+    fetchComments(image.id);
+  }
+
+
+  function fetchComments(imageId) {
+    const url = `https://api.imgur.com/3/gallery/${imageId}/comments`;
+    fetch(url, {
+      headers: {
+        Authorization: `Client-ID ${clientId}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Comments Response:", data);
+        displayComments(data.data);
+      })
+      .catch(error => {
+        console.error("Error fetching comments:", error);
+        const commentsContainer = document.getElementById("comments");
+        commentsContainer.innerHTML = `<p>Error loading comments: ${error.message}</p>`;
+      });
+  }
+
+
+  function displayComments(comments) {
+    const commentsContainer = document.getElementById("comments");
+    commentsContainer.innerHTML = "";
+
+    if (!comments || comments.length === 0) {
+      commentsContainer.innerHTML = "<p>No comments found.</p>";
+      return;
+    }
+
+    comments.forEach(comment => {
+      const commentDiv = document.createElement("div");
+      commentDiv.className = "comment";
+
+      const author = document.createElement("div");
+      author.className = "comment-author";
+      author.innerText = comment.author || "Anonymous";
+
+      const text = document.createElement("div");
+      text.className = "comment-text";
+      text.innerText = comment.comment;
+
+      commentDiv.appendChild(author);
+      commentDiv.appendChild(text);
+      commentsContainer.appendChild(commentDiv);
+    });
+  }
+
+
+  function goBack() {
+    document.getElementById("gallery").style.display = "flex";
+    document.getElementById("detail-page").style.display = "none";
+    document.getElementById("comments").innerHTML = "";
+  }
+
+
+  fetchRandomGallery();
+</script>
+</body>
+</html>
